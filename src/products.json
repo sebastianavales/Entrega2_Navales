@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1,
+    "title": "Camiseta Negra",
+    "description": "Camiseta 100% algodón color negro",
+    "code": "CAM001",
+    "price": 45000,
+    "status": true,
+    "stock": 25,
+    "category": "Ropa",
+    "thumbnails": [
+      "img/camiseta1.jpg"
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Pantalón Azul",
+    "description": "Pantalón color azul",
+    "code": "PAN001",
+    "price": 100000,
+    "status": true,
+    "stock": 10,
+    "category": "Ropa",
+    "thumbnails": [
+      "img/pantalon1.jpg"
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Pantalón Negro",
+    "description": "Pantalón color negro",
+    "code": "PAN002",
+    "price": 120000,
+    "status": true,
+    "stock": 15,
+    "category": "Ropa",
+    "thumbnails": [
+      "img/pantalon2.jpg"
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Camiseta Blanca",
+    "description": "Camiseta color blanco",
+    "code": "CAM002",
+    "price": 50000,
+    "status": true,
+    "stock": 50,
+    "category": "Ropa",
+    "thumbnails": [
+      "img/camiseta2.jpg"
+    ]
+  }
+]
