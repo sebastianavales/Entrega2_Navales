@@ -1,5 +1,6 @@
 {
-  "name": "entrega1",
+  "type": "module",
+  "name": "entrega2",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,6 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.3",
+    "socket.io": "^4.8.1"
   }
 }
