@@ -1,84 +1,138 @@
 import { Router } from "express";
-import ProductManager from "../managers/ProductManager.js";
-import path from "path";
-import { fileURLToPath } from "url";
+import ProductModel from "../models/product.model.js";
 
-// Instancia del router de Express
 const router = Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const productsFile = path.join(__dirname, "..", "data", "products.json");
-
-const productManager = new ProductManager(productsFile);
 
 // GET /api/products
 router.get("/", async (req, res) => {
-  const products = await productManager.getProducts();
-  res.json(products);
+  try {
+    let { limit = 10, page = 1, sort, query } = req.query;
+    limit = parseInt(limit);
+    page = parseInt(page);
+
+    // Construir filtro
+    const filter = {};
+    if (query) {
+      // si es true/false, filtrar por status
+      if (query === "true" || query === "false") {
+        filter.status = query === "true";
+      } else {
+        // filtrar por categoría
+        filter.category = query;
+      }
+    }
+
+    // Construir opción de ordenamiento
+    const sortOption = {};
+    if (sort === "asc") sortOption.price = 1;
+    else if (sort === "desc") sortOption.price = -1;
+
+    const totalProducts = await ProductModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / limit);
+    const skip = (page - 1) * limit;
+
+    const products = await ProductModel.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit);
+
+    // Construir links
+    const baseUrl = `${req.protocol}://${req.get("host")}${req.path}`;
+    const prevPage = page > 1 ? page - 1 : null;
+    const nextPage = page < totalPages ? page + 1 : null;
+
+    res.json({
+      status: "success",
+      payload: products,
+      totalPages,
+      prevPage,
+      nextPage,
+      page,
+      hasPrevPage: prevPage !== null,
+      hasNextPage: nextPage !== null,
+      prevLink: prevPage ? `${baseUrl}?page=${prevPage}&limit=${limit}` : null,
+      nextLink: nextPage ? `${baseUrl}?page=${nextPage}&limit=${limit}` : null,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: "error", error: "Error al obtener productos" });
+  }
 });
 
 // GET /api/products/:pid
 router.get("/:pid", async (req, res) => {
-  const id = parseInt(req.params.pid);
-  const product = await productManager.getProductById(id);
-  product
-    ? res.json(product)
-    : res.status(404).json({ error: "Producto no encontrado" });
+  try {
+    const producto = await ProductModel.findById(req.params.pid);
+    if (!producto)
+      return res.status(404).json({ error: "Producto no encontrado" });
+
+    res.json(producto);
+  } catch {
+    res.status(400).json({ error: "ID inválido" });
+  }
 });
 
 // POST /api/products
 router.post("/", async (req, res) => {
   try {
-    const newProduct = await productManager.addProduct(req.body);
+    const nuevoProducto = await ProductModel.create(req.body);
 
-    // Emitir update usando io desde app
+    // Emitir actualización vía WebSocket
     const io = req.app.get("io");
     if (io) {
-      const products = await productManager.getProducts();
-      io.emit("updateProducts", products);
+      const productosActualizados = await ProductModel.find();
+      io.emit("updateProducts", productosActualizados);
     }
 
-    res.status(201).json(newProduct);
+    res.status(201).json(nuevoProducto);
   } catch (error) {
-    res.status(500).json({ error: "Error al crear producto" });
+    res.status(400).json({ error: "Datos inválidos o código duplicado" });
   }
 });
 
 // PUT /api/products/:pid
 router.put("/:pid", async (req, res) => {
-  const id = parseInt(req.params.pid);
-  const updatedProduct = await productManager.updateProduct(id, req.body);
+  try {
+    const productoActualizado = await ProductModel.findByIdAndUpdate(
+      req.params.pid,
+      req.body,
+      { new: true }
+    );
 
-  if (!updatedProduct) {
-    return res.status(404).json({ error: "Producto no encontrado" });
+    if (!productoActualizado)
+      return res.status(404).json({ error: "Producto no encontrado" });
+
+    const io = req.app.get("io");
+    if (io) {
+      const productosActualizados = await ProductModel.find();
+      io.emit("updateProducts", productosActualizados);
+    }
+
+    res.json(productoActualizado);
+  } catch {
+    res.status(400).json({ error: "ID inválido" });
   }
-
-  // 🔹 Emitir actualización en tiempo real
-  const io = req.app.get("io");
-  if (io) {
-    const products = await productManager.getProducts();
-    io.emit("updateProducts", products);
-  }
-
-  res.json(updatedProduct);
 });
 
 // DELETE /api/products/:pid
 router.delete("/:pid", async (req, res) => {
-  const id = parseInt(req.params.pid);
-  const deleted = await productManager.deleteProduct(id);
-  if (!deleted)
-    return res.status(404).json({ error: "Producto no encontrado" });
+  try {
+    const eliminado = await ProductModel.findByIdAndDelete(req.params.pid);
 
-  // Emitir update
-  const io = req.app.get("io");
-  if (io) {
-    const products = await productManager.getProducts();
-    io.emit("updateProducts", products);
+    if (!eliminado)
+      return res.status(404).json({ error: "Producto no encontrado" });
+
+    const io = req.app.get("io");
+    if (io) {
+      const productosActualizados = await ProductModel.find();
+      io.emit("updateProducts", productosActualizados);
+    }
+
+    res.json({ message: "Producto eliminado correctamente" });
+  } catch {
+    res.status(400).json({ error: "ID inválido" });
   }
-
-  res.json({ message: "Producto eliminado correctamente" });
 });
 
 export default router;

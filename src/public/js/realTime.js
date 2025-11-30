@@ -14,7 +14,7 @@ socket.on("updateProducts", (products) => {
   // Recorre los productos y los muestra en la lista
   products.forEach((p) => {
     const li = document.createElement("li");
-    li.id = `product-${p.id}`;
+    li.id = `product-${p._id}`;
     li.innerHTML = `<strong>${p.title}</strong> - $${p.price}`;
     productList.appendChild(li);
   });

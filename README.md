@@ -1,11 +1,11 @@
-# Entrega N°2 - WebSockets y Handlebars
+# Entrega Final
 
 ## Descripción
-Este proyecto corresponde a la **segunda entrega del curso de Programación Backend I**.
+Este proyecto corresponde a la **entrega final   del curso de Programación Backend I**.
 
-El objetivo es configurar un servidor con Express, Handlebars y Socket.io para gestionar productos y carritos en tiempo real.
+Se implementa un servidor con Express y Handlebars para gestionar productos y carritos, con persistencia en MongoDB.
 
-Además de mantener las operaciones CRUD mediante rutas HTTP, se implementa una vista dinámica que refleja los cambios automáticamente al crear, actualizar o eliminar productos.
+Además de mantener las operaciones CRUD mediante rutas HTTP, se ofrecen vistas dinámicas para consultar productos, agregar al carrito y visualizar el contenido del carrito.
 
 ## 🚀 Funcionalidades
 
@@ -23,9 +23,13 @@ Además de mantener las operaciones CRUD mediante rutas HTTP, se implementa una 
 - **POST /** → Agrega un nuevo carrito vacío.
 - **GET /:cid** → Devuelve un carrito especifico por su ID.
 - **POST /:cid/product/:pid:** → Agregar un producto especifico por su ID a un carrito especifico.
+- **PUT /:cid** → Actualiza todos los productos del carrito con un arreglo de productos.
+- **PUT /:cid/products/:pid** → Actualiza la cantidad de un producto específico en el carrito.
+- **DELETE /:cid** → Elimina todos los productos del carrito.
 
 ### Vistas con Handlebars
 - **/ - /home** → Muestra la lista de todos los productos almacenados hasta el momento.
+- **/cart/:cid** → Muestra el contenido de un carrito específico, con cantidad de cada producto y total.
 - **/realtimeproducts** → Renderiza la misma lista, pero conectada a Socket.io. Cada vez que se agrega, actualiza o elimina un producto desde la API, la vista se actualiza automáticamente sin recargar la página.
 
 ## 📦 Estructura del proyecto
@@ -34,13 +38,9 @@ Entrega2/
 │
 ├── src/
 │ │ 
-│ ├── data/
-│ │ ├── carts.json
-│ │ └── products.json
-│ │
-│ ├── managers/
-│ │ ├── CartManager.js
-│ │ └── ProductManager.js
+│ ├── models/
+│ │ ├── cart.model.js
+│ │ └── product.model.js
 │ │
 │ ├── public/
 │ │ └── js/
@@ -54,6 +54,7 @@ Entrega2/
 │ ├── views/
 │ │ ├── layouts/
 │ │ │ └── main.handlebars
+│ │ ├── cart.handlebars
 │ │ ├── home.handlebars
 │ │ └── realTimeProducts.handlebars
 │ │

@@ -1,74 +1,85 @@
-// Importación de dependencias
+import mongoose from "mongoose";
 import express from "express";
 import { engine } from "express-handlebars";
 import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Importación de rutas y lógica
+import ProductModel from "./models/product.model.js"; // modelo de productos
 import productsRouter from "./routes/products.router.js";
 import cartsRouter from "./routes/carts.router.js";
 import viewsRouter from "./routes/views.router.js";
-import ProductManager from "./managers/ProductManager.js";
 
-// Configuración de rutas del proyecto
+// Conexión a MongoDB
+try {
+  await mongoose.connect("mongodb://localhost:27017/demo-db");
+  console.log("Conectado a MongoDB");
+} catch (err) {
+  console.error("Error al conectar a MongoDB:", err);
+}
+
+// Configuración de paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuración básica del servidor
+// Inicialización de Express
 const app = express();
 const PORT = 8080;
-const productManager = new ProductManager("./src/data/products.json");
 
 // Middlewares
-app.use(express.json()); // Permite recibir JSON en el body
-app.use(express.urlencoded({ extended: true })); // Permite recibir datos de formularios
-app.use(express.static(path.join(__dirname, "public"))); // Carpeta pública para archivos estáticos
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 
-// Configuración del motor de plantillas (Handlebars)
+// Motor de plantillas
 app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
 app.set("views", path.join(__dirname, "views"));
 
-// Rutas del proyecto
-app.use("/api/products", productsRouter); // Rutas de productos
-app.use("/api/carts", cartsRouter); // Rutas de carritos
-app.use("/", viewsRouter); // Rutas para las vistas (home, realtime)
+// Rutas
+app.use("/api/products", productsRouter);
+app.use("/api/carts", cartsRouter);
+app.use("/", viewsRouter);
 
-// Inicialización del servidor HTTP y de WebSockets
+// Servidor HTTP + Socket.io
 const httpServer = app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
-// Configuración de Socket.io
 const io = new Server(httpServer);
-
-// Guardar instancia de Socket.io para usarla desde otros módulos si es necesario
 app.set("io", io);
 
-// Eventos de conexión con WebSocket
+// SOCKET.IO: Productos en tiempo real
 io.on("connection", async (socket) => {
-  console.log("Cliente conectado");
+  console.log("Cliente conectado", socket.id);
 
-  // Enviar lista actual de productos al nuevo cliente
   try {
-    const products = await productManager.getProducts();
+    // Enviar productos iniciales al cliente
+    const products = await ProductModel.find().lean();
     socket.emit("updateProducts", products);
   } catch (error) {
-    console.error("Error al enviar productos iniciales:", error);
+    console.error("Error enviando productos iniciales:", error);
   }
 
-  // Evento: agregar un nuevo producto
-  socket.on("newProduct", async (product) => {
-    await productManager.addProduct(product);
-    const products = await productManager.getProducts();
-    io.emit("updateProducts", products);
+  // Agregar producto
+  socket.on("newProduct", async (productData) => {
+    try {
+      await ProductModel.create(productData);
+      const products = await ProductModel.find().lean();
+      io.emit("updateProducts", products);
+    } catch (error) {
+      console.error("Error agregando producto:", error);
+    }
   });
 
-  // Evento: eliminar un producto
+  // Eliminar producto
   socket.on("deleteProduct", async (id) => {
-    await productManager.deleteProduct(id);
-    const products = await productManager.getProducts();
-    io.emit("updateProducts", products);
+    try {
+      await ProductModel.findByIdAndDelete(id);
+      const products = await ProductModel.find().lean();
+      io.emit("updateProducts", products);
+    } catch (error) {
+      console.error("Error eliminando producto:", error);
+    }
   });
 });
