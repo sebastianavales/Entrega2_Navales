@@ -34,7 +34,7 @@ Además de mantener las operaciones CRUD mediante rutas HTTP, se ofrecen vistas 
 
 ## 📦 Estructura del proyecto
 ```
-Entrega2/
+EntregaFinal/
 │
 ├── src/
 │ │ 
